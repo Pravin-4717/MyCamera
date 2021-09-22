@@ -34,8 +34,8 @@ enum Filter: String {
 
 class FilterModel {
 	var filter = Filter.none {
-		didSet {
-			self.initialize()
+		willSet {
+			self.isInitialised = false
 		}
 	}
 	
@@ -44,6 +44,7 @@ class FilterModel {
 	
 	private var metalTextureCache: CVMetalTextureCache?
 	private var bufferPool: CVPixelBufferPool!
+	private var isInitialised = false
 
 	init() {
 		self.initialize()
@@ -53,7 +54,10 @@ class FilterModel {
 		buffer: CVPixelBuffer,
 		newPixelBuffer: inout CVPixelBuffer?,
 		formatDescription: CMFormatDescription) throws -> MTLTexture {
-		try self.renderFilteredBuffer(buffer, &newPixelBuffer, formatDescription)
+		if !isInitialised {
+			self.initialize()
+		}
+		return try self.renderFilteredBuffer(buffer, &newPixelBuffer, formatDescription)
 	}
 }
 
@@ -61,6 +65,7 @@ private extension FilterModel {
 	func initialize() {
 		do {
 			try self.setup()
+			self.isInitialised = true
 		} catch {
 			if let errorString = (error as? FilterError)?.description {
 				assertionFailure(errorString)
